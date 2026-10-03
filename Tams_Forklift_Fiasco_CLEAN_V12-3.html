@@ -1,0 +1,224 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<title>Tam's Forklift Fiasco</title>
+<style>
+*{box-sizing:border-box;-webkit-user-select:none;user-select:none}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#171717;font-family:Arial,sans-serif;touch-action:none}
+button{font:inherit}
+#rotate{display:none;position:fixed;inset:0;z-index:999;background:#111;color:#fff;align-items:center;justify-content:center;text-align:center;font-size:26px;font-weight:900;padding:30px}
+@media(orientation:portrait){#rotate{display:flex}}
+#game{position:relative;width:100%;height:100%;min-height:320px;overflow:hidden;background:linear-gradient(#b7d1db 0 57%,#70757a 57% 100%)}
+#hud{position:absolute;z-index:20;top:0;left:0;right:0;height:56px;display:grid;grid-template-columns:repeat(6,1fr);background:#111;color:#fff;border-bottom:3px solid #000}
+.hcell{text-align:center;padding:5px 2px;font-size:11px;font-weight:900;border-right:1px solid #444}.hcell b{display:block;color:#ffd22e;font-size:18px;margin-top:2px}
+#objective{position:absolute;z-index:8;top:63px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#111;color:#ffd22e;border-radius:8px;padding:5px 12px;font-size:clamp(10px,1.6vw,16px);font-weight:1000}
+#warehouse{position:absolute;left:0;right:0;top:56px;bottom:0}
+#wall{position:absolute;left:0;right:0;top:0;height:57%;background:repeating-linear-gradient(90deg,rgba(0,0,0,.04) 0 2px,transparent 2px 85px)}
+#floorline{position:absolute;left:0;right:0;top:57%;height:4px;background:#4a4a4a}
+#overflow{position:absolute;left:2%;top:18%;width:17%;border-top:4px dashed #e62e2e;color:#b30000;font-weight:1000;font-size:12px;padding-top:3px}
+#pile{position:absolute;left:4%;bottom:18%;width:13%;display:flex;flex-direction:column-reverse}
+.pallet{height:18px;margin-top:1px;background:linear-gradient(#b77734,#8e5422);border:2px solid #4b2b12;border-radius:2px;position:relative}
+.pallet:after{content:"";position:absolute;left:12%;right:12%;top:6px;border-top:2px solid #e1ad70}
+#drop{position:absolute;right:5%;bottom:15%;width:15%;height:12%;border:4px dashed #f7d51d;background:rgba(255,230,0,.12);display:flex;align-items:center;justify-content:center;text-align:center;font-weight:1000;color:#222}
+#fork{position:absolute;left:16%;bottom:16%;width:150px;height:105px;z-index:10;transform:translateX(-50%) scaleX(1);transition:filter .1s;transform-origin:center bottom}#fork.faceleft{transform:translateX(-50%) scaleX(-1)}
+.wheel{position:absolute;bottom:5px;width:31px;height:31px;background:#181818;border:5px solid #3a3a3a;border-radius:50%}.w1{left:39px}.w2{left:100px}
+.body{position:absolute;left:30px;bottom:22px;width:88px;height:44px;background:#e2aa19;border:3px solid #111;border-radius:8px}
+.cab{position:absolute;left:66px;bottom:63px;width:49px;height:37px;border:6px solid #171717;border-bottom:0}
+.mast{position:absolute;left:118px;bottom:19px;width:9px;height:78px;background:#222}.forkarm{position:absolute;left:119px;bottom:20px;width:31px;height:7px;background:#222}
+.driver{position:absolute;left:74px;bottom:61px;width:34px;height:45px;z-index:4;transform-origin:50% 100%}
+.hardhat{position:absolute;left:4px;top:0;width:27px;height:12px;background:#ffd22e;border:2px solid #171717;border-radius:15px 15px 4px 4px}
+.hardhat:after{content:"";position:absolute;left:-4px;bottom:-3px;width:34px;height:4px;background:#ffd22e;border:2px solid #171717;border-radius:3px}
+.face{position:absolute;left:8px;top:11px;width:20px;height:20px;background:#b97845;border:2px solid #171717;border-radius:45%}
+.eyes{position:absolute;left:4px;top:6px;width:3px;height:3px;background:#111;border-radius:50%;box-shadow:8px 0 #111}
+.mouth{position:absolute;left:5px;top:13px;width:8px;height:2px;background:#111;border-radius:5px}
+.vest{position:absolute;left:6px;top:29px;width:25px;height:16px;background:#ff8a00;border:2px solid #171717;border-radius:4px}
+.vest:before{content:"";position:absolute;left:9px;top:0;width:3px;height:12px;background:#e8ff62}.vest:after{content:"";position:absolute;left:1px;right:1px;top:6px;height:3px;background:#e8ff62}
+.driver.panic .eyes{height:5px}.driver.panic .mouth{height:5px;border:2px solid #111;background:#fff;top:12px}
+.driver.sad{transform:rotate(9deg) translateY(4px)}.driver.sad .mouth{background:transparent;border-top:2px solid #111;transform:rotate(180deg);top:14px}
+#load{display:none;position:absolute;right:-6px;bottom:20px;width:31px;height:18px;background:#a9692d;border:2px solid #40250f;font-size:11px;font-weight:1000;text-align:center}
+@keyframes rgb{0%{filter:hue-rotate(0deg) saturate(2) drop-shadow(0 0 8px #f00)}33%{filter:hue-rotate(120deg) saturate(2) drop-shadow(0 0 13px #0ff)}66%{filter:hue-rotate(240deg) saturate(2) drop-shadow(0 0 13px #f0f)}100%{filter:hue-rotate(360deg) saturate(2) drop-shadow(0 0 8px #f00)}}
+#fork.rgb{animation:rgb .48s linear infinite}
+#power{display:none;position:absolute;z-index:9;width:44px;height:44px;border-radius:50%;align-items:center;justify-content:center;font-size:25px;background:#fff;border:4px solid #111;box-shadow:0 0 15px #fff}
+#message{position:absolute;z-index:14;left:22%;right:22%;bottom:4%;text-align:center;color:#fff;font-size:clamp(12px,2vw,18px);font-weight:1000;text-shadow:0 2px 3px #000;pointer-events:none}
+.ctrl{position:absolute;z-index:25;bottom:12px;border:3px solid rgba(17,17,17,.72);background:rgba(238,238,238,.42);color:#111;font-weight:1000;box-shadow:0 4px 0 rgba(17,17,17,.65);touch-action:none;backdrop-filter:blur(1px);-webkit-backdrop-filter:blur(1px)}
+.ctrl:active,.ctrl.on{transform:translateY(4px);box-shadow:0 1px 0 rgba(17,17,17,.7);background:rgba(255,210,46,.62)}
+#left,#right{width:68px;height:68px;border-radius:50%;font-size:32px}#left{left:18px}#right{left:132px}
+#action{right:22px;width:82px;height:82px;border-radius:50%;font-size:15px;background:rgba(255,210,46,.48)}
+#restart{display:none;right:20px;width:110px;height:76px;border-radius:14px;background:#e84b3c;color:#fff;font-size:14px}
+#music{position:absolute;z-index:26;right:14px;top:64px;border:2px solid #111;border-radius:8px;background:#eee;padding:5px 8px;font-size:11px;font-weight:900}
+#warning{display:none;position:absolute;z-index:30;left:50%;top:11%;transform:translateX(-50%);max-width:72%;background:#fff2a8;border:5px solid #111;border-radius:12px;padding:10px 14px;text-align:center;font-size:clamp(14px,2.4vw,24px);font-weight:1000}
+.overlay{display:none;position:absolute;inset:0;z-index:70;background:rgba(0,0,0,.78);align-items:center;justify-content:center;padding:18px;text-align:center}
+.overlay.show{display:flex}.card{max-width:650px;background:#fff7d6;color:#111;border:6px solid #111;border-radius:18px;padding:18px 24px;box-shadow:0 10px 0 #111}
+.bigboss{font-size:clamp(52px,10vw,95px);line-height:1}.title{font-size:clamp(25px,5vw,46px);font-weight:1000;margin:5px}.copy{font-size:clamp(14px,2.4vw,22px);font-weight:800;line-height:1.3}
+.overlay button{margin-top:14px;padding:12px 22px;border:4px solid #111;border-radius:12px;background:#ffd22e;font-weight:1000;font-size:20px}
+#celebrate{display:none;position:absolute;inset:0;z-index:60;pointer-events:none;overflow:hidden}#celebrate.show{display:block}
+.cheer{position:absolute;left:50%;top:19%;transform:translate(-50%,-50%);font-size:clamp(22px,5vw,50px);font-weight:1000;color:#fff;text-shadow:0 3px #111,0 0 14px #ffd22e;text-align:center}
+.spark{position:absolute;width:8px;height:8px;border-radius:50%;animation:boom 1.25s ease-out forwards}
+@keyframes boom{to{transform:translate(var(--dx),var(--dy));opacity:0}}
+@keyframes shake{0%,100%{transform:translate(0)}25%{transform:translate(-5px,2px)}50%{transform:translate(5px,-2px)}75%{transform:translate(-4px,-1px)}}
+#game.shake{animation:shake .12s linear}
+</style>
+</head>
+<body>
+<div id="rotate">ROTATE YOUR PHONE ↻<br><small>Tam cannot operate a forklift vertically.</small></div>
+<div id="game">
+  <div id="hud">
+    <div class="hcell">SCORE<b id="score">0</b></div><div class="hcell">LEVEL<b id="level">1</b></div>
+    <div class="hcell">PALLETS<b id="pc">0</b></div><div class="hcell">STRIKES<b id="strikes">0 / 1</b></div>
+    <div class="hcell">LOAD<b id="lc">0 / 1</b></div><div class="hcell">POWER<b id="pow">—</b></div>
+  </div>
+  <div id="warehouse"><div id="wall"></div><div id="floorline"></div>
+    <div id="objective">OBJECTIVE: CLEAR LEVEL 5 • ONE OVERFLOW = FIRED</div>
+    <div id="overflow">⚠ OVERFLOW LINE</div><div id="pile"></div><div id="drop">DROP<br>ZONE</div>
+    <div id="power">⚡</div>
+    <div id="fork"><div class="cab"></div><div class="body"></div><div class="wheel w1"></div><div class="wheel w2"></div><div class="mast"></div><div class="forkarm"></div>
+      <div id="driver" class="driver"><div class="hardhat"></div><div class="face"><div class="eyes"></div><div class="mouth"></div></div><div class="vest"></div></div><div id="load"></div>
+    </div>
+    <div id="message">CLEAR THE PILE. DON'T GET FIRED.</div>
+    <button id="left" class="ctrl">◀</button><button id="right" class="ctrl">▶</button>
+    <button id="action" class="ctrl">PICK / DROP</button><button id="restart" class="ctrl">MASH RESTART<br><span id="hits">0 / 10</span></button>
+    <button id="music">♫ MUSIC ON</button>
+    <div id="warning"></div>
+  </div>
+  <div id="celebrate"><div class="cheer">🎆 GOOD JOB, TAM! 🎆</div></div>
+  <div id="success" class="overlay"><div class="card"><div class="bigboss">😄👍</div><div id="successTitle" class="title">GOOD JOB, TAM!</div><div id="successCopy" class="copy"></div><button id="backWork">BACK TO WORK</button></div></div>
+  <div id="fired" class="overlay"><div class="card"><div class="bigboss">😡📋</div><div class="title">TAM, YOU'RE FIRED.</div><div class="copy">You let the pallet stack cross the overflow line. One overflow is enough.<br><br>The company will document the incident and contest unemployment using its incident logs. Actual unemployment eligibility is determined by the applicable state agency.</div><button id="again">TRY AGAIN</button></div></div>
+</div>
+<script>
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id), clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), rnd=(a,b)=>a+Math.random()*(b-a), now=()=>performance.now();
+const state={x:.18,pallets:4,carry:0,score:0,level:1,running:true,paused:false,stalled:false,restarts:0,last:now(),spawnClock:0,stallClock:0,
+ speedUntil:0,heavyUntil:0,power:null,nextPower:7000,warn:0,roundDone:false,nextBossYell:now()+rnd(6500,10500),roundDone:false};
+const keys={l:false,r:false};
+let ac=null,eng=null,engGain=null,musicTimer=null,musicStep=0,musicOn=true;
+
+function audio(){if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)()} if(ac.state==="suspended")ac.resume();return ac}
+function tone(f,d=.08,v=.018,type="square"){const c=audio(),o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(c.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+d);o.stop(c.currentTime+d)}
+function engineStart(){if(eng)return;const c=audio();eng=c.createOscillator();engGain=c.createGain();eng.type="sawtooth";eng.frequency.value=50;engGain.gain.value=.0001;eng.connect(engGain);engGain.connect(c.destination);eng.start()}
+function engineUpdate(){if(!ac||!eng)return;const moving=state.running&&!state.paused&&!state.stalled&&(keys.l||keys.r),active=state.running&&!state.paused&&!state.stalled;eng.frequency.setTargetAtTime(moving?(speedOn()?96:78):50,ac.currentTime,.05);engGain.gain.setTargetAtTime(active?(moving?.026:.012):.0001,ac.currentTime,.07)}
+function musicStart(){audio();if(musicTimer||!musicOn)return;const bass=[110,110,147,110,131,131,165,147,110,147,196,165,131,147,110,98],lead=[440,0,523,494,0,440,392,0,440,0,587,523,494,440,392,330];musicTimer=setInterval(()=>{let i=musicStep++%16;tone(bass[i],.11,.005);if(lead[i])setTimeout(()=>tone(lead[i],.07,.0035),35)},220)}
+function musicStop(){clearInterval(musicTimer);musicTimer=null}
+function userAudio(){audio();engineStart();musicStart()}
+function playBoost(){
+ const seq=[330,440,587,784,988,1175];
+ seq.forEach((f,i)=>setTimeout(()=>tone(f,.075,.022,i<3?"square":"sine"),i*55));
+ setTimeout(()=>tone(1320,.18,.018,"sine"),seq.length*55);
+}
+function bossWah(){for(let i=0;i<10;i++)setTimeout(()=>tone(145+(i%4)*18,.09,.025,"sawtooth"),i*115)}
+function happySound(){[262,330,392,523,659].forEach((f,i)=>setTimeout(()=>tone(f,.13,.025),i*90))}
+function speedOn(){return now()<state.speedUntil} function heavyOn(){return now()<state.heavyUntil} function capacity(){return heavyOn()?3:1}
+
+function pileRatio(){const line=$("overflow").getBoundingClientRect().top,p=$("pile").getBoundingClientRect();return Math.max(0,(p.bottom-p.top)/Math.max(1,p.bottom-line))}
+function overflowed(){return state.pallets>0&&$("pile").getBoundingClientRect().top<=$("overflow").getBoundingClientRect().top}
+function render(){
+ $("fork").style.left=(16+state.x*65)+"%";
+ $("pile").innerHTML="";for(let i=0;i<state.pallets;i++){const p=document.createElement("div");p.className="pallet";$("pile").appendChild(p)}
+ $("score").textContent=state.score;$("level").textContent=state.level;$("pc").textContent=state.pallets;$("strikes").textContent=(state.running?"0":"1")+" / 1";
+ $("lc").textContent=state.carry+" / "+capacity();
+ const p=[];if(speedOn())p.push("⚡2× "+Math.ceil((state.speedUntil-now())/1000)+"s");if(heavyOn())p.push("🏋️3× "+Math.ceil((state.heavyUntil-now())/1000)+"s");$("pow").textContent=p.join(" + ")||"—";
+ $("fork").classList.toggle("rgb",speedOn());$("driver").classList.toggle("panic",pileRatio()>=.68&&!state.paused);
+ $("load").style.display=state.carry?"block":"none";$("load").textContent=state.carry>1?"×"+state.carry:"";
+ if(state.power){$("power").style.display="flex";$("power").textContent=state.power.type==="speed"?"⚡":"🏋️";$("power").style.left=(16+state.power.x*65)+"%";$("power").style.bottom="29%"}else $("power").style.display="none";
+ engineUpdate()
+}
+function message(t){$("message").textContent=t}
+
+const bossLines=[
+ "TAM! HURRY UP! THOSE PALLETS AREN'T GOING TO MOVE THEMSELVES!",
+ "MOVE YOUR ASS! THIS IS A FORKLIFT, NOT A LA-Z-BOY!",
+ "YOU HAVE ONE JOB! AND SOMEHOW THE WOOD IS WINNING!",
+ "TAM! I HAVE SEEN SHOPPING CARTS WITH BETTER MATERIAL-HANDLING SKILLS!",
+ "I'VE TAKEN CRAPS MORE USEFUL THAN THIS SHIFT!",
+ "WHAT DO YOU MEAN YOU HAVE 8 DUIs?!",
+ "TAM! THE FORKLIFT HAS WHEELS FOR A REASON!",
+ "LESS SIGHTSEEING, MORE FORKLIFTING!",
+ "HEY! HURRY UP! I'M NOT PAYING YOU TO ADMIRE THE PALLETS!",
+ "TAM! IF YOU MOVE ANY SLOWER I'M PUTTING THE PALLETS ON PAYROLL!"
+];
+function randomBossYell(){
+ if(state.paused||!state.running)return;
+ showWarning(bossLines[Math.floor(Math.random()*bossLines.length)]);
+ state.nextBossYell=now()+rnd(8000,14000);
+}
+function showWarning(text){if($("warning").style.display==="block")return;$("warning").textContent=text;$("warning").style.display="block";bossWah();setTimeout(()=>{$("warning").style.display="none"},4300)}
+function warningCheck(){const r=pileRatio();if(r>.82&&state.warn<1){state.warn=1;showWarning("TAM! THE PALLETS ARE GETTING HIGH! MOVE YOUR ASS!")}else if(r>.94&&state.warn<2){state.warn=2;showWarning("TAM! THE WOOD IS WINNING! FIX IT!")}}
+function spawnPower(){
+ if(state.power||state.paused||!state.running)return;
+ const type=Math.random()<.65?"speed":"heavy";state.power={type,x:rnd(.20,.78)};state.nextPower=now()+rnd(9000,13500);message(type==="speed"?"⚡ 2× SPEED POWER-UP!":"🏋️ HEAVY LIFT POWER-UP!")
+}
+function collectPower(){
+ if(!state.power||Math.abs(state.x-state.power.x)>.095)return;
+ if(state.power.type==="speed"){state.speedUntil=now()+15000;playBoost();message("⚡ STAR SPEED! 2× FOR 15 SECONDS!")}
+ else{state.heavyUntil=now()+18000;message("🏋️ HEAVY LIFT! CARRY UP TO 3!");tone(180,.18,.03)}
+ state.power=null
+}
+function action(){
+ if(state.paused||!state.running||state.stalled)return;
+ if(state.x<.16&&state.pallets>0&&state.carry<capacity()){const n=Math.min(capacity()-state.carry,state.pallets);state.pallets-=n;state.carry+=n;state.score+=50*n;tone(330,.07,.02);message("FORKS LOADED — PICKED UP "+n+" PALLET"+(n>1?"S":""))}
+ else if(state.x>.84&&state.carry>0){const n=state.carry;state.carry=0;state.score+=150*n;tone(523,.08,.02);setTimeout(()=>tone(659,.08,.018),70);message("FORKS CLEAR — DELIVERED "+n+" PALLET"+(n>1?"S":"")+"!");if(state.pallets===0)success()}
+ else message(state.carry?"GET TO THE DROP ZONE!":"GET TO THE PALLET PILE!");
+ render()
+}
+function success(){
+ if(state.roundDone||state.pallets!==0||state.carry!==0)return;
+ state.roundDone=true;state.paused=true;keys.l=keys.r=false;state.score+=750;fireworks();happySound();
+ setTimeout(()=>{const win=state.level>=5;$("successTitle").textContent=win?"🏆 TAM SURVIVED LEVEL 5!":"GOOD JOB, TAM!";$("successCopy").innerHTML=win?"YOU CLEARED LEVEL 5 WITHOUT GETTING FIRED.<br><br>THE BOSS IS SHOCKED. YOU WIN.":"THE BOSS IS ACTUALLY HAPPY.<br>YOU CLEARED LEVEL "+state.level+"!<br><br>☕ YOU CAN TAKE A 10-MINUTE BREAK.<br><small>(Obviously we're not making you wait ten real minutes.)</small><br><br>NEXT UP: LEVEL "+(state.level+1);$("backWork").textContent=win?"PLAY AGAIN":"BACK TO WORK";$("success").classList.add("show")},650)
+}
+function nextLevel(){
+ $("success").classList.remove("show");
+ if(state.level>=5){reset();return}
+ state.level++;state.pallets=3+state.level;state.carry=0;state.roundDone=false;state.paused=false;state.warn=0;state.spawnClock=0;state.stallClock=0;state.nextPower=now()+4500;state.nextBossYell=now()+rnd(5500,9000);state.last=now();message("LEVEL "+state.level+" — PALLETS ARRIVE FASTER. DON'T GET FIRED.");render()
+}
+function fire(){
+ if(!state.running)return;state.running=false;state.paused=true;keys.l=keys.r=false;$("driver").classList.add("sad");$("fired").classList.add("show");bossWah();engineUpdate();render()
+}
+function stall(){
+ if(state.stalled||state.paused||!state.running)return;state.stalled=true;state.restarts=0;keys.l=keys.r=false;$("action").style.display="none";$("restart").style.display="block";$("hits").textContent="0 / 10";message("FORKLIFT DIED! MASH RESTART — PALLETS KEEP COMING!");[110,82,61,45].forEach((f,i)=>setTimeout(()=>tone(f,.14,.03),i*90));engineUpdate()
+}
+function mash(){
+ if(!state.stalled)return;userAudio();state.restarts++;$("hits").textContent=state.restarts+" / 10";tone(50+state.restarts*4,.06,.03);$("game").classList.remove("shake");void $("game").offsetWidth;$("game").classList.add("shake");if(navigator.vibrate)navigator.vibrate(35);
+ if(state.restarts>=10){state.stalled=false;$("restart").style.display="none";$("action").style.display="block";message("IT STARTED! MOVE, TAM!");tone(120,.2,.04);engineUpdate()}
+}
+function fireworks(){
+ const box=$("celebrate");box.querySelectorAll(".spark").forEach(e=>e.remove());box.classList.add("show");const cols=["#ff3344","#ffd22e","#44ddff","#7cff4a","#ff55dd","#fff"];
+ [[28,38],[50,26],[72,39]].forEach(([cx,cy],b)=>{for(let i=0;i<28;i++){const e=document.createElement("i"),a=Math.PI*2*i/28+b*.12,d=65+Math.random()*105;e.className="spark";e.style.left=cx+"%";e.style.top=cy+"%";e.style.background=cols[i%cols.length];e.style.setProperty("--dx",Math.cos(a)*d+"px");e.style.setProperty("--dy",Math.sin(a)*d+"px");box.appendChild(e)}});setTimeout(()=>box.classList.remove("show"),2300)
+}
+function reset(){
+ Object.assign(state,{x:.18,pallets:4,carry:0,score:0,level:1,running:true,paused:false,stalled:false,restarts:0,last:now(),spawnClock:0,stallClock:0,speedUntil:0,heavyUntil:0,power:null,nextPower:now()+4500,warn:0,nextBossYell:now()+rnd(5500,9000),roundDone:false});
+ keys.l=keys.r=false;$("fired").classList.remove("show");$("success").classList.remove("show");$("driver").classList.remove("sad","panic");$("restart").style.display="none";$("action").style.display="block";message("LEVEL 1 — CLEAR THE PILE. ONE OVERFLOW = FIRED.");render()
+}
+function hold(el,key){
+ const down=e=>{e.preventDefault();userAudio();keys[key]=true;el.classList.add("on")},up=e=>{e.preventDefault();keys[key]=false;el.classList.remove("on")};
+ el.addEventListener("touchstart",down,{passive:false});el.addEventListener("touchend",up,{passive:false});el.addEventListener("touchcancel",up,{passive:false});
+ el.addEventListener("pointerdown",e=>{if(e.pointerType!=="touch")down(e)});window.addEventListener("pointerup",e=>{if(e.pointerType!=="touch")up(e)})
+}
+hold($("left"),"l");hold($("right"),"r");
+$("action").addEventListener("touchstart",e=>{e.preventDefault();userAudio();action()},{passive:false});$("action").addEventListener("pointerdown",e=>{if(e.pointerType!=="touch"){e.preventDefault();userAudio();action()}});
+$("restart").addEventListener("touchstart",e=>{e.preventDefault();mash()},{passive:false});$("restart").addEventListener("pointerdown",e=>{if(e.pointerType!=="touch"){e.preventDefault();mash()}});
+$("backWork").addEventListener("click",()=>{userAudio();nextLevel()});$("again").addEventListener("click",()=>{userAudio();reset()});
+$("music").addEventListener("click",()=>{userAudio();musicOn=!musicOn;if(musicOn){musicStart();$("music").textContent="♫ MUSIC ON"}else{musicStop();$("music").textContent="♫ MUSIC OFF"}});
+window.addEventListener("blur",()=>{keys.l=keys.r=false;$("left").classList.remove("on");$("right").classList.remove("on")});
+document.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
+
+function loop(t){
+ const dt=Math.min(.05,(t-state.last)/1000||0);state.last=t;
+ if(state.running&&!state.paused){
+   if(!state.stalled){const dir=(keys.r?1:0)-(keys.l?1:0);if(dir<0)$("fork").classList.add("faceleft");else if(dir>0)$("fork").classList.remove("faceleft");const base=.39*1.03*1.05*(1+(state.level-1)*.025);state.x=clamp(state.x+dir*base*(speedOn()?2:1)*dt,0,1);collectPower()}
+   state.spawnClock+=dt;state.stallClock+=dt;
+   const spawnInterval=Math.max(.78,3.08-(state.level-1)*.43);
+   if(state.spawnClock>=spawnInterval){state.spawnClock=0;state.pallets++;warningCheck()}
+   const stallInterval=Math.max(12,22-(state.level-1)*1.5);
+   if(state.stallClock>=stallInterval){state.stallClock=0;if(Math.random()<.42)stall()}
+   if(now()>=state.nextPower&&!state.power)spawnPower();if(now()>=state.nextBossYell)randomBossYell();
+   if(overflowed())fire();
+ }
+ render();requestAnimationFrame(loop)
+}
+reset();requestAnimationFrame(loop);
+})();
+</script>
+</body></html>
